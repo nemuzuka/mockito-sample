@@ -2,11 +2,14 @@ package net.jp.vss.sample.controller.tasks
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import net.jp.vss.sample.domain.exceptions.DuplicateException
 import net.jp.vss.sample.usecase.tasks.CreateTaskUseCase
+import net.jp.vss.sample.usecase.tasks.CreateTaskUseCaseParameter
 import net.jp.vss.sample.usecase.tasks.TaskUseCaseResultFixtures
+import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.CoreMatchers.`is`
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,8 +57,12 @@ class CreateTaskApiControllerTest {
             .andExpect(jsonPath("task_code").value(`is`(taskUseCaseResult.taskCode)))
 
         // mock のパラメータに対する verify
-        val expectedParameter = parameter.toParameter()
-        verify(createTaskUseCase).createTask(expectedParameter)
+        argumentCaptor<CreateTaskUseCaseParameter>().apply {
+            verify(createTaskUseCase).createTask(capture())
+            val capturedParameter = firstValue
+            val expectedParameter = parameter.toParameter()
+            assertThat(capturedParameter).isEqualTo(expectedParameter)
+        }
     }
 
     @Test
