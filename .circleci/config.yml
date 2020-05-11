@@ -1,0 +1,53 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:8-jdk
+
+    working_directory: ~/repo
+
+    environment:
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+      TERM: dumb
+
+    steps:
+      - checkout
+
+      - setup_remote_docker:
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-{{ checksum "build.gradle.kts" }}-{{ checksum "gradle.properties" }}-{{ checksum "settings.gradle.kts" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-
+
+      - run:
+          name: Update dependencies
+          command: ./gradlew dependencies
+
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: v1-{{ checksum "build.gradle.kts" }}-{{ checksum "gradle.properties" }}-{{ checksum "settings.gradle.kts" }}
+
+      - run:
+          name: Run ktlint
+          command: ./gradlew ktlint
+      - run:
+          name: Run tests
+          command: ./gradlew test jacocoTestReport
+      - store_artifacts:
+          path: build/reports
+      - store_test_results:
+          path: build/test-results
+          destination: test-results
+workflows:
+  version: 2
+  all:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
